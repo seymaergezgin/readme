@@ -1,0 +1,429 @@
+---
+title: __OECD Countries' Social and Welfare Statistics and Turkey’s Position__
+author: Ecenur Özsoy - Şeymanur Ergezgin
+date: "_January 30th, 2022_"
+output: rmdformats::robobook
+---
+
+<style type="text/css">
+
+h1.title {
+  text-align: center;
+}
+
+</style>
+
+
+```{r, include=FALSE, warning=FALSE}
+# adding theme
+#install.packages("rmdformats")
+library(rmdformats)
+#install.packages(remotes)  # if necessary
+#remotes::install_github("juba/rmdformats")
+```
+
+<center>
+<h4> __Team README__ </h4> 
+Ecenur Özsoy<br></br>
+Şeymanur Ergezgin 
+
+_January, 2022_
+</center>
+
+# Project Description
+
+## Project Goal & Social Problem Addressed
+
+The goal of this project sees the people who live in better countries how's their life, what's more important for them, how's qualify their's lives, which feature affects another feature. We may realize the new relationship between features to help us to understand well-being. In the world, sometimes money talks but always well-being wins. Therefore, we want to figure out these indexes and to see Turkey's position, and see where we were wrong.
+
+## Project Data & Access To Data
+
+Although data on this data set is still being collected, we have data for the years 2004-2020.
+
+The 11 dimensions of current well-being relate to material conditions that shape people’s economic options -and quality-of-life factors that encompass how well people are, what they know and can do, and how healthy and safe their places of living are. Quality of life also encompasses how connected and engaged people are, and how and with whom they spend their time. The systemic resources that underpin future well-being over time are expressed in terms of four types of capital: Economic, Natural, Human and Social. 
+
+_[To access data click here](https://www.oecd-ilibrary.org/social-issues-migration-health/data/oecd-social-and-welfare-statistics_socwel-data-en)_
+
+
+_You can also access the data with `install.packages("OECD")`_
+
+
+# Actions Taken
+
+## Data Importing & Exploring & Visualizing
+
+### Adding libraries
+
+```{r, message = FALSE}
+  library(tidyverse)
+  library(XML2R)
+  library(maps)
+  library(ggpubr)
+  library(gganimate)
+  library(viridis)
+  library(RColorBrewer)
+```
+
+### Reading data
+
+```{r}
+data <- read.csv("data/oecd-data.csv")
+str(data)
+```
+
+
+There are 19 columns we have in this data set. 
+
+To come to the meaning of the features are 
+
+* "Location" is the code version of the "Country".
+
+* "TYPE_VAR" is the code version of the "Type.of.indicator" which  Type of indicator means how this index have been calculated. The unique values of the this features are `r unique(data$Type.of.indicator)`.
+
+* "VARIABLE" is the code version of the "Indicator". There are `r length(unique(data$VARIABLE))` indicators in this data set and these are `r unique(data$Indicator)`.
+
+* "WB" is the code version of the " Current.Future.Well.being".  Since there is no differences in this column, we can eliminate this. It just contains `r unique(data$WB)`.
+
+* Sex, age and education sometimes can affect the features and to see the differences it can be divided by levels. However, in this data set there is no separation and all of features calculated through `r unique(data$Sex)`. Therefore, these three feautures can also be elimaneted. 
+
+* "TIME" and time refer same thing which is year. 
+
+* "Value" gives value of the index.
+
+* Flag.Codes and Flag contain just `r unique(data$Flag.Codes)`. Therefore, it will be also removed. 
+
+
+Almost every features duplicate themselves as a code version. Let's remove unmeaningful and duplicated features in this data set.
+
+```{r}
+keeps <- c("Country", "TYPE_VAR", "Indicator", "Value", "Time")
+data_keeped <- data[keeps]
+str(data_keeped)
+```
+
+### Missing Values 
+
+```{r}
+data_keeped[is.na(data_keeped)]
+```
+
+Gladly, we do not have missing values in this data set. 
+
+
+
+# Results and Discussion 
+
+## Feeling Safe at Night
+
+```{r, warning = FALSE}
+data_safety_2020 <- data_keeped  %>% 
+  filter(Indicator == "Feeling safe at night")  %>% 
+  filter(Time== 2020) %>% 
+  filter(TYPE_VAR=="AVERAGE")
+
+ggplot(data_safety_2020, aes(reorder(Country, Value), Value)) +   
+geom_segment(
+    aes(x = Country, xend = Country, y = 0, yend = Value), 
+    color = "lightgray") + 
+  geom_point(colour=rainbow(length(data_safety_2020$Country)), size=3) +
+  scale_color_viridis_d() +
+  rotate_x_text(45) +
+  ggtitle("Average Score of Feeling Safe at Night in 2020") +
+  theme(
+  plot.title = element_text(size=15, hjust = 0.5),
+  axis.title.x = element_text(size=9),
+  axis.title.y = element_text(size=9)) +
+  xlab("Countries") + 
+  ylab("Score (%)") +
+  theme(panel.background = element_rect(fill = "#ffffff" ),
+        text = element_text(size=10),
+        axis.text.x = element_text(hjust=1)) +
+  scale_y_continuous(
+    limits = c(0,100),
+    breaks = c(0,20,40,60,80,100))
+```
+
+If we were to choose a country to live in, the feeling safe factor would have a major effect on our decision. This indicator is meant to evaluate this factor. It shows that the percentage of people who replied "yes" to the survey question of “Do you feel safe walking alone at night in the city or area where you live?”. When the graph is examined it can be observed that while Turkey ranked 33rd, countries such as Norway, Slovenia and Finland has the first three spots out of 40 countries.
+
+
+## Life Satisfaction
+
+```{r, warning = FALSE}
+data_life_satisfaction <- data_keeped  %>% 
+  filter(Indicator == "Life satisfaction") %>% 
+  filter(Time== 2018) %>% 
+  filter(TYPE_VAR=="AVERAGE")
+
+graph_life_satisfaction <- ggplot(data_life_satisfaction, 
+                                  aes(reorder(Country, Value), Value)) + 
+  geom_segment(
+    aes(x = Country, xend = Country, y = 0, yend = Value)) +
+  geom_bar(stat="identity", fill="white", width=0.6, 
+           colour=viridis(length(data_life_satisfaction$Country))) + 
+  rotate_x_text(45) +
+  xlab("Countries") + 
+  ylab("Score") +
+  ggtitle("Life Satisfaction in 2018") +
+  theme(panel.background = element_rect(fill = "#ffffff" ),
+        text = element_text(size=10),
+        axis.text.x = element_text(hjust=1),
+        plot.title = element_text(size=15, hjust = 0.5),
+    axis.title.x = element_text(size=9),
+    axis.title.y = element_text(size=9)) + 
+  scale_y_continuous(
+    limits = c(0,10),
+    breaks = c(0,2,4,6,8,10))
+
+graph_life_satisfaction
+```
+
+Objective issues such as income are really important in choosing the place to live for sure, but we also think that subjective issues such as life satisfaction are also really important. Life satisfaction is measured through survey question concerning overall satisfaction with life. The question is: “Overall, how satisfied are you with your life as a whole these days”, with a response scale ranging from 0 to 10, anchored by 0 (“not at all satisfied”) and 10 (“completely satisfied”). According to the answers,  Colombia, Finland and Canada has the highest scores where Turkey has the lowest score out of 31 countries. 
+
+
+## Life Expectancy at Birth
+
+```{r, warning = FALSE}
+data_life_expectancy <- data_keeped  %>% 
+  filter(Indicator == "Life expectancy at birth")
+
+data_life_expectancy_graph <- data_life_expectancy %>% 
+  filter(Country=="Switzerland" | Country=="Russia" | Country=="Norway" |
+         Country=="South Africa" | Country=="Poland" | Country=="Turkey"| 
+         Country=="Korea" | Country=="Greece" |
+         Country=="Mexico" | Country=="Lithuania") 
+
+ggplot(data_life_expectancy_graph, aes(x = Time, y = Value)) + 
+  geom_line(aes(color = Country)) + 
+  scale_color_manual(values = c("darkred", "steelblue", "black", 
+                                "purple",  "green", "red", "brown",
+                                "yellow","orange", "pink")) +
+  ggtitle("Life Expectancy at Birth") +
+  theme(panel.background = element_rect(fill = "#ffffff" ),
+        plot.title = element_text(size=15, hjust = 0.5),
+        axis.title.x = element_text(size=9),
+        axis.title.y = element_text(size=9)) +
+  xlab("Change by Years") + 
+  ylab("Life Expectancy (in years)")
+```
+
+Life expectancy at birth indicator stands for the number of years a child born today could expect to live based on the age-specific death rates currently prevailing. Considering the graph, it can be seen that life expectancy at birth is increased worldwide. However, there is still a significant difference between some counties and others. Switzerland is at the top of the list while South Africa is at the bottom despite of the noticeable increase over the years. 
+
+
+## Housing Affordability
+
+```{r, warning = FALSE}
+data_housing_affordability <- data_keeped  %>% 
+filter(Indicator == "Housing affordability") %>% 
+filter(TYPE_VAR=="AVERAGE") %>%
+filter(Country=="Switzerland" | Country=="Russia" | Country=="Norway" |
+       Country=="South Africa" | Country=="Poland" | Country=="Turkey"| 
+       Country=="Korea" | Country=="Greece" |
+       Country=="Mexico" | Country=="Lithuania") 
+
+graph_housing_affordability <- ggplot(
+  data_housing_affordability,
+  aes(Time, Value, group = Country, color = Country)) +
+  geom_line() +
+  scale_color_viridis_d() +
+  labs(x = "Years", y = "Housing Affordability (%)") +
+  theme( panel.background = element_rect(fill = "#ffffff" ),
+         legend.position = "top") +
+    scale_x_continuous(
+      limits = c(2004, 2019),
+      breaks = c(2004, 2006, 2008, 2010, 2012, 2014, 2016, 2018)) +
+  ggtitle("Housing Affordability") +
+  theme(
+    plot.title = element_text(size=15, hjust = 0.5),
+    axis.title.x = element_text(size=9),
+    axis.title.y = element_text(size=9)) +
+  theme(text = element_text(size=10),
+        axis.text.x = element_text(hjust=1)) 
+
+graph_housing_affordability + geom_point(aes(group = seq_along(Time))) +
+    transition_reveal(Time)
+```
+
+This indicator is to measure the percentage of the share of household gross adjusted disposable income that remains available to the household after deducting housing costs. While Korea has the highest percentage throughout the years,  significant decrease of Greek’s percentage draws attention.
+
+
+
+## Household Income in 2019
+
+```{r, warning = FALSE}
+data_housing <- data_keeped %>%
+  filter(Time == 2019) %>%
+  filter(Indicator == "Household income") %>%
+  mutate(difference = Value - mean(Value))
+
+data_housing %>%
+  ggplot(., aes(reorder(Country, difference), difference)) + 
+    coord_flip() +
+    geom_bar(stat="identity", width=.90, 
+             fill = rainbow(n=length(data_housing$Country))) + 
+    xlab("Countries") + 
+    ylab("The distance to Average Household Income $USD") + 
+    guides(fill=TRUE) +
+    ggtitle("The average difference in Household Income in 2019") + 
+    theme(
+       panel.background = element_rect(fill = "#ffffff" ),
+       axis.text.x=element_text(angle=45, hjust=0.95,
+                                   vjust=0.7, size = 9, 
+                                   color = rainbow(n=length(data_housing$Country)))) + 
+    theme(plot.title = element_text(hjust = 0.5, size = 15)) 
+```
+
+Since the data in 2020 does not exist for this index, the data in 2019 is used. The mean value of index is calculated and then founded the difference between average and its housing income. Household income means that household net adjusted disposable income, measured in USD at 2019 PPPs per capita. According to the plot, Switzerland takes the lead and Mexico takes the last with a noticeable difference. Can any other index have this pattern? It should be examined.
+
+
+
+## Social Support in 2020
+
+Social support is measured by the share of people answering "yes" to a (yes/no) question: “If you were in trouble, do you have relatives or friends you can count on to help you whenever you need them, or not?”. 
+
+```{r}
+data_socialsupport <- data_keeped %>%
+  filter(Time == 2020) %>%
+  filter(Indicator == "Social support") %>%
+  filter(TYPE_VAR == "AVERAGE")
+```
+
+```{r dpi=200}
+data_socialsupport$Country[data_socialsupport$Country == "United States"] <- "USA"
+
+world_map <- map_data("world")
+world_map <- subset(world_map, region != "Antarctica")
+
+ggplot(data_socialsupport) +
+  geom_map(
+    dat = world_map, map = world_map, aes(map_id = region), 
+    fill = "gray", color = "#cbcbcb", size = 0.25
+  ) +
+  geom_map(map = world_map, aes(map_id = Country, fill = Value), size = 0.55) +
+  scale_fill_gradient(low = "#fff7bc", high = "#1b5104", 
+                      name = "Social support %(YES)") +
+  expand_limits(x = world_map$long, y = world_map$lat) + 
+  theme( panel.background = element_rect(fill = "#ffffff" ),
+         legend.position="bottom")
+```
+
+
+
+Iceland, Czech Republic, Ireland, Finland, and Norway lead this index with more than 95% which means that every 95 person in 100 person in these countries feel comfortable when they ask for help. Most of these countries can be thought as cold country. Colombia, Greece, and Mexico are the countries in the last 3 with below than 80%. Also these countries can be considered as hot. Is proximity to the equator a problem? 
+
+
+## Perceived Health
+
+```{r, warning = FALSE}
+data_perceived_health <- data_keeped  %>% 
+  filter(Indicator == "Perceived health") %>% 
+  filter(TYPE_VAR =="AVERAGE") %>%
+  filter(Time > 2007) %>%
+  filter(Time < 2019) %>%
+  filter(Country != "Japan") %>%
+  filter(Country != "Chile") %>%
+  filter(Country != "New Zealand") %>%
+  filter(Country != "Australia") %>%
+  group_by(Time) %>%
+  arrange(Time, desc(Value)) 
+
+data_perceived_health$ranking <- seq.int(nrow(data_perceived_health))
+
+graph_perceived_health <-data_perceived_health %>%
+  ggplot(aes(x=Country, y=Value)) +
+  labs(title="Perceived Health in \n Year: {as.integer(frame_time)}")+
+  geom_segment( aes(x=Country, xend=Country, y=0, yend=Value), color="gold") +
+  geom_point( color="darkorange", size=3, alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme( 
+    panel.background = element_rect(fill = "#ffffff" ),
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.title.y=element_text(size=12, hjust=0.5),
+    axis.title.x=element_text(size=12, hjust=0.5),
+    plot.title=element_text(color="black", hjust=0.5, size=15)) +
+    scale_y_continuous(
+      limits = c(0,100),
+      breaks = c(0,20,40,60,80,100)) +
+    xlab("Countries") + 
+    ylab("Score (%)") +
+    transition_time(Time)
+animate(graph_perceived_health, fps=50, nframes=500, width=750)
+
+anim_perceived_health<-animate(graph_perceived_health, 
+                               nframes=500, fps=50, renderer=gifski_renderer())
+anim_save("perceived_health.gif")
+```
+
+In order to make comparisons about health, perceived health indicator is used. It refers to people’s overall self-reported health status. Data are based on general household surveys or on more detailed health interviews. When the graph is examined, it can be seen that Canada has the highest percentage at any year. Meanwhile, Korea and Lithuania has the lowest percentages.
+
+
+## Student Skills
+
+```{r, warning = FALSE}
+data_student_skills <- data_keeped  %>% 
+    filter(Indicator == "Student skills (science)" | 
+           Indicator == "Student skills (maths)" | 
+           Indicator == "Student skills (reading)") %>% 
+    filter(TYPE_VAR=="AVERAGE") %>% 
+    filter(Time == 2018) %>% 
+  filter(Country=="Switzerland" | Country=="Russia" | Country=="Norway" |
+         Country=="South Africa" | Country=="Poland" | Country=="Turkey"| 
+         Country=="Korea" | Country=="Greece" | Country=="Netherlands" |
+         Country=="Mexico" | Country=="Lithuania" | Country=="Estonia"| 
+         Country=="Japan" | Country=="Finland" | Country=="Canada" | 
+         Country=="Colombia" | Country=="Italy") 
+
+pal <- colorRampPalette(brewer.pal(3, "Oranges"))(300)
+graph_student_skills <- ggplot(data_student_skills, aes(x=Indicator, y=Country, fill=Value )) +
+  geom_raster(aes(fill = Value )) +
+  scale_x_discrete(breaks = c("Student skills (maths)", 
+                                "Student skills (reading)", "Student skills (science)"), 
+                     labels = c("Maths", "Reading", "Science")) +
+  labs(title ="Student Skills in 2018", x = "Skills", y = "Countries") +
+  theme(panel.background = element_rect(fill = "#FFFFF0" )) +
+  scale_fill_gradientn(name = "Score", colours=c("white", pal)) + theme(
+      plot.title = element_text(color="black", size=11,face="bold", hjust=0.5),
+      axis.title.x = element_text(color="black", size=11, face="bold"),
+      axis.title.y = element_text(color="black", size=9, face="bold"),
+      axis.text.x = element_text(color = "black", 
+                                 size = 10, angle = 0, hjust = .5, vjust = .5, face = "plain"),
+      axis.text.y = element_text(color = "black", 
+                                 size = 9, angle = 0, hjust = 1, vjust = 0, face = "plain"),
+      panel.background = element_rect(fill ="white"),
+#      panel.grid.major.y = element_line('grey'),
+#      panel.grid.minor.x = element_line('grey'),
+      plot.background=element_rect(fill="white"),
+      legend.key = element_rect(fill = "white"),
+      legend.background = element_rect(fill="white"))
+
+graph_student_skills
+```
+
+Another factor that will help in the evaluation is the student skills which is measured using OECD Programme for International Student Assessment (PISA) test scores. Countries such as Estonia, Canada, Finland, Japan usually has the first spots while Colombia and Mexico has the last two spots. 
+
+
+# Conclusion
+
+According to the results, the difference between some country scores and others are remarkable large. For instance, Switzerland and Mexico in the household income figure or Norway and South Africa in the feeling safe at night figure. One thing that has been noticed from the results is that although some countries have improved themselves seriously in a factor, it was not enough to be in one of the first places in the ranking. And another thing is, some indicator scores are expected to develop positively over the years within the development of technology, conversely, some countries get lower scores than the previous years. Looking at all the results, it is clear that some countries are more livable than the others from many aspects. Finally, Although the top three rankings vary according to factors, the three most prominent countries are: Switzerland, Finland and Norway. On the other hand, Turkey does not have noticeable success in any indicator. In fact, there are many factors that are not included in this list because well-being factors can differ for every single person. However, we tried to cover the factors that are known to be highly influential.
+
+\newpage
+
+# References
+
+[https://stats.oecd.org/viewhtml.aspx?datasetcode=HSL&lang=en](https://stats.oecd.org/viewhtml.aspx?datasetcode=HSL&lang=en)
+
+[https://ulyngs.github.io/oxforddown/_main.pdf](https://ulyngs.github.io/oxforddown/_main.pdf])
+
+[https://www.geeksforgeeks.org/how-to-draw-a-horizontal-barplot-in-r/](https://www.geeksforgeeks.org/how-to-draw-a-horizontal-barplot-in-r/)
+
+[https://ggplot2.tidyverse.org/reference/geom_point.html](https://ggplot2.tidyverse.org/reference/geom_point.html)
+
+[https://www.datanovia.com/en/blog/gganimate-how-to-create-plots-with-beautiful-animation-in-r/](https://www.datanovia.com/en/blog/gganimate-how-to-create-plots-with-beautiful-animation-in-r/)
+
+[https://hazalunal.github.io/missing.migrants/MissingImmigrants_TeamMigraine.html](https://hazalunal.github.io/missing.migrants/MissingImmigrants_TeamMigraine.html)
+
+[https://celikebru.github.io/BeeAware/](https://celikebru.github.io/BeeAware/)
+
+[Lecture Notes](https://github.com/MAT381E-Fall21)
